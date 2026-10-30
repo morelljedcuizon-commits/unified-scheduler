@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "unified-scheduler"
+version = "1.0.0"
+description = "A native Windows calendar and task manager with Google Calendar and Moodle subscriptions."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "PySide6>=6.10.2,<7",
+  "google-api-python-client>=2.180,<3",
+  "google-auth>=2.40,<3",
+  "google-auth-oauthlib>=1.2.2,<2",
+  "google-auth-httplib2>=0.2,<1",
+  "httplib2>=0.22,<1",
+  "requests>=2.32.4,<3",
+  "icalendar>=6.3,<8",
+  "recurring-ical-events>=3.8,<4",
+  "keyring>=25.6,<26",
+  "python-dateutil>=2.9,<3",
+  "tzlocal>=5.3,<6",
+  "tzdata>=2025.2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.4,<10", "pyinstaller>=6.16,<7"]
+
+[project.scripts]
+unified-scheduler = "unified_scheduler.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra"
+

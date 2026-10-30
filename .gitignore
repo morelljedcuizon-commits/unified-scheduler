@@ -1,0 +1,54 @@
+# Python and virtual environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.pytest-run/
+.coverage
+htmlcov/
+.coverage.*
+coverage.xml
+.ruff_cache/
+.mypy_cache/
+
+# Build output
+build/
+dist/
+.build-cache/
+artifacts/
+*.manifest
+
+# Per-user databases, backups and private configuration
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+*.ics
+credentials.json
+client_secret*.json
+oauth_client*.json
+token*.json
+secrets/
+.env
+.env.*
+local-config/
+*.log
+*.bak
+*.tmp
+*.swp
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Editor and OS state
+.idea/
+.vscode/
+Thumbs.db
+Desktop.ini
+
+# Deliberately allow public test calendar fixtures
+!tests/fixtures/*.ics
