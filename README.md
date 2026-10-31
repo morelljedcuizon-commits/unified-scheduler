@@ -4,11 +4,11 @@ A native Windows desktop calendar and task manager built with Python, PySide6 an
 
 ## Public release preparation
 
-This is the existing **Windows desktop app**. The website in [docs/public-site](docs/public-site/index.html) introduces it and hosts its privacy/terms pages; it is not a web calendar. [GitHub Releases](https://github.com/morelljedcuizon-commits/unified-scheduler/releases) is the intended download location; a published installer or verified Google OAuth status is not assumed.
+This is the existing **Windows desktop app**. The [public website](https://morelljedcuizon-commits.github.io/unified-scheduler/) introduces it and hosts its [privacy policy](https://morelljedcuizon-commits.github.io/unified-scheduler/privacy.html) and [terms](https://morelljedcuizon-commits.github.io/unified-scheduler/terms.html). Website sources are in [docs/public-site](docs/public-site/index.html). [GitHub Releases](https://github.com/morelljedcuizon-commits/unified-scheduler/releases) is the intended download location; a published installer or verified Google OAuth status is not assumed.
 
 The developer confirmed on October 31, 2026 that the Google API works and testing is complete, and authorized publication of the website. The original brief reported External / Testing; current Cloud publishing/verification status has not been independently checked. Website publication and Google's approval of the brand/scopes are separate milestones. See [Google OAuth publication](docs/GOOGLE_OAUTH_PUBLICATION.md) for any remaining Console steps, [website deployment](docs/PUBLIC_SITE.md), and [Windows release instructions](docs/RELEASE.md). The [release audit](docs/RELEASE_AUDIT.md) and [security review](docs/SECURITY_REVIEW.md) record the earlier preparation checks.
 
-Publisher: **Unified Scheduler**. Support and privacy contact: **cuizon.morell@gmail.com**. A developer-owned domain, live website URLs, a valid Desktop client and Google's review outcome remain owner/Google configuration.
+Publisher: **Unified Scheduler**. Support and privacy contact: **cuizon.morell@gmail.com**. The website was published to GitHub Pages on October 31, 2026, with HTTPS enforced.
 
 ## Run from source
 

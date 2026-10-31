@@ -14,6 +14,14 @@ Files:
 
 The publisher name **Unified Scheduler** and email **cuizon.morell@gmail.com** were provided by the developer. On October 31, 2026, the developer authorized website publication; the policy and terms now use that effective date and their draft notices have been removed. No custom domain has been supplied. Website publication does not assert Google verification approval.
 
+## Published website
+
+The [GitHub Pages deployment](https://github.com/morelljedcuizon-commits/unified-scheduler/actions/runs/41158584693) succeeded on October 31, 2026, for commit `7854fe2`. HTTPS is enforced. All three pages and their CSS, icon and screenshot assets returned HTTP 200 and matched the committed site files.
+
+- Homepage: [Unified Scheduler](https://morelljedcuizon-commits.github.io/unified-scheduler/)
+- [Privacy policy](https://morelljedcuizon-commits.github.io/unified-scheduler/privacy.html)
+- [Terms of use](https://morelljedcuizon-commits.github.io/unified-scheduler/terms.html)
+
 ## Preview and review before publishing
 
 From the repository root:
@@ -33,7 +41,7 @@ Before publishing:
 5. Check that every screenshot contains only synthetic demo data. Keep the visible sample-data descriptions. Never copy a live calendar screenshot into this site.
 6. Choose the final public domain and HTTPS URLs. Keep Google Console branding and policy links consistent with those URLs. Complete the separate [Google OAuth publication checklist](GOOGLE_OAUTH_PUBLICATION.md).
 
-## Publish to GitHub Pages when ready
+## Publish future website updates
 
 The prepared `.github/workflows/pages.yml` workflow runs **only by manual dispatch**. Merely committing or pushing it does not deploy the website. It requires the owner's publication confirmation and rejects HTML that still contains a draft marker or an uppercase template placeholder.
 
@@ -43,7 +51,7 @@ The prepared `.github/workflows/pages.yml` workflow runs **only by manual dispat
 4. Open **Actions → Publish public website → Run workflow**, select the reviewed default branch and check the confirmation only after the legal pages and deployment are approved.
 5. Confirm that both preparation and deployment succeeded. Use the URL reported by the deployment, not an assumed URL. Visit the homepage, privacy and terms directly in a signed-out browser and on a phone; all must be public over HTTPS.
 
-For this repository, the conventional project-site URL would be `https://morelljedcuizon-commits.github.io/unified-scheduler/` **if** Pages is enabled and deployment succeeds. That address has not been established as a live deployment by this work. Relative links also support a custom domain without a site-generator rebuild.
+The current deployment uses the project-site URL listed above. Relative links also support a custom domain without a site-generator rebuild.
 
 The workflow uploads **only `docs/public-site`**. It does not publish the repository root, local configuration, databases, tokens, technical reports or desktop build artifacts. Check future edits before adding files to this directory.
 

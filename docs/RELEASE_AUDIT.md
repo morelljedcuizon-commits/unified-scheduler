@@ -2,6 +2,8 @@
 
 Audit date: October 30, 2026. This describes the existing Python/PySide6 Windows desktop application and the incremental release preparation in this checkout. It does not certify a Google Cloud project, a public release, or Google verification.
 
+October 31 update: the developer confirmed the API works and testing is complete. Source changes were committed and pushed; public contacts and policies were finalized, and the [website was deployed to GitHub Pages](PUBLIC_SITE.md#published-website). Hosting and initial policy finalization mentioned as remaining below describe the October 30 audit state. No custom domain or Google verification outcome is claimed.
+
 The audit began before the public-release changes. The checkout already contained the earlier app-owned OAuth configuration change and 96 passing tests. Those changes were retained. The last reported Cloud setting is **External / Testing**; the repository cannot establish the live Console state.
 
 ## Existing behavior and necessary changes

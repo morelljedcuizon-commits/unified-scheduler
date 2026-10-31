@@ -2,7 +2,7 @@
 
 Prepared against official Google documentation checked on **October 30, 2026**. Console labels and requirements can change; follow the linked official guidance and the status shown for your actual project.
 
-**Current Cloud status has not been independently checked.** The developer confirmed on October 31, 2026 that the API works and testing is complete; the requested next step is website publication. External / Testing was reported in the original preparation brief and is not assumed to be the current live Console state. No repository change, Windows build, website deployment, or GitHub Release changes Google's publishing or verification status. This guide remains a reference for any Console steps still applicable; it does not claim that Unified Scheduler is approved.
+**Current Cloud status has not been independently checked.** The developer confirmed on October 31, 2026 that the API works and testing is complete. The [public website](https://morelljedcuizon-commits.github.io/unified-scheduler/) was published that day. External / Testing was reported in the original preparation brief and is not assumed to be the current live Console state. No repository change, Windows build, website deployment, or GitHub Release changes Google's publishing or verification status. This guide remains a reference for any Console steps still applicable; it does not claim that Unified Scheduler is approved.
 
 ## Who completes each part
 
@@ -66,6 +66,8 @@ In the selected project, open **APIs & Services → Library**, find **Google Cal
 Open **Google Auth platform → Branding**. If the platform is unconfigured, use **Get Started** and enter the real app name, reachable user-support address and developer contact email. Choose **External** for users outside one Workspace organization. Review the policy acknowledgment before accepting it. Existing projects expose these settings through **Branding**, **Audience** and **Data Access**. While testing, keep only approved test accounts on the list. [Configure OAuth consent](https://developers.google.com/workspace/guides/configure-oauth-consent)
 
 ### 4. Finish and deploy the public website
+
+Completed for the initial website on October 31, 2026. The [website guide](PUBLIC_SITE.md#published-website) records the live homepage, privacy and terms URLs. Follow the review and deployment instructions below for future changes.
 
 Review `docs/public-site/index.html`, `privacy.html` and `terms.html`. Replace any owner/contact/domain placeholders with verified information. The contact information must be usable; a public issue tracker is not a place for users to post private calendars or credentials. Publish the static site using [the repository's website guide](PUBLIC_SITE.md).
 

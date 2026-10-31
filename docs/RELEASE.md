@@ -45,6 +45,8 @@ The website links to the repository's Releases page without inventing an availab
 
 ## Exact owner sequence
 
+The initial source commit/push, publisher/contact and policy finalization, and GitHub Pages deployment were completed on October 31, 2026. The [website guide](PUBLIC_SITE.md#published-website) records the live URLs. The sequence below remains a reference for release preparation and future updates.
+
 1. Review the [audit](RELEASE_AUDIT.md), [security review](SECURITY_REVIEW.md), code, workflows and this candidate. Commit/push only reviewed source and public site assets; leave private configuration ignored.
 2. Review privacy/terms text and confirm **Unified Scheduler** and **cuizon.morell@gmail.com** as public publisher/contact details. Choose a developer-owned domain and configure its DNS/ownership verification.
 3. Configure GitHub Pages and run its manual workflow following [PUBLIC_SITE.md](PUBLIC_SITE.md). Open the deployed homepage, privacy and terms pages without signing in, on desktop and mobile. Configure HTTPS and the custom domain; record the actual final URLs.
@@ -59,6 +61,7 @@ The website links to the repository's Releases page without inventing an availab
 | State | What it means |
 | --- | --- |
 | Implemented and tested | Local code and checks recorded in [verification.md](verification.md); owner-supplied Desktop config, read-only OAuth, isolated credentials, packaging and source website files |
-| Implemented but requires manual testing | Real Google consent and refresh, no-tester/new-user Production acceptance, clean Windows install/extraction, browser rendering, live GitHub Actions/Pages deployment as listed in verification |
-| Requires developer configuration | Real Desktop client, owned domain/DNS, public site URLs, policy review, GitHub environment/secret, Cloud settings and manual release publication |
+| Website published | GitHub Pages deployment succeeded October 31, 2026; homepage, privacy, terms and assets are public over HTTPS. See [PUBLIC_SITE.md](PUBLIC_SITE.md#published-website). |
+| Implemented but requires manual testing | Checks outside the agent's completed verification include real Google consent and refresh, no-tester/new-user Production acceptance, clean Windows install/extraction and phone rendering. The developer confirmed the API works and testing is complete on October 31. |
+| Requires developer configuration as applicable | Real Desktop client for release builds, owned domain/DNS, GitHub release-build environment/secret, Cloud settings and manual release publication |
 | Requires Google approval | Brand and applicable sensitive-scope verification; no such approval has been observed or claimed |
