@@ -22,6 +22,12 @@ The [GitHub Pages deployment](https://github.com/morelljedcuizon-commits/unified
 - [Privacy policy](https://morelljedcuizon-commits.github.io/unified-scheduler/privacy.html)
 - [Terms of use](https://morelljedcuizon-commits.github.io/unified-scheduler/terms.html)
 
+## Search Console HTML-file verification
+
+The developer supplied `googleaee3f6f2a829d4a4.html` for the URL-prefix property `https://morelljedcuizon-commits.github.io/unified-scheduler/`. The unchanged file is tracked in `docs/public-site` so future deployments preserve it. Its public address is `https://morelljedcuizon-commits.github.io/unified-scheduler/googleaee3f6f2a829d4a4.html`. Once the file is published and accessible, click **Verify** in Search Console. Keep the file after verification succeeds. This verifies the website URL-prefix property; it does not itself grant OAuth branding or scope approval. See [Google's HTML-file instructions](https://support.google.com/webmasters/answer/9008080?hl=en).
+
+For a verification-file-only update while other website changes await publication, run the Pages workflow from `main` with `site_content_ref` set to the existing published site's commit. The workflow checks out that site's content, copies validated Google verification files from `main`, and deploys the assembled directory with the usual checks. Leave this input empty for a normal website publication. The initial verification-file update uses `7854fe2e75976fffed95ab090f27dbc641952e5a`, preserving the live website while the installer release remains a draft.
+
 ## Preview and review before publishing
 
 From the repository root:

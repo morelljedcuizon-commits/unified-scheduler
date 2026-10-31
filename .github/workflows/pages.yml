@@ -8,6 +8,11 @@ on:
         type: boolean
         required: true
         default: false
+      site_content_ref:
+        description: 'Optional existing published commit for a verification-file-only update; leave empty for normal publication'
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -25,20 +30,41 @@ jobs:
       pages: read
     steps:
       - uses: actions/checkout@v7
+      - name: Read the existing published website
+        if: inputs.site_content_ref != ''
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.site_content_ref }}
+          path: .pages-published
+          persist-credentials: false
       - name: Check publication details
         shell: python
+        env:
+          SITE_CONTENT_REF: ${{ inputs.site_content_ref }}
         run: |
           from pathlib import Path
           from html.parser import HTMLParser
           from urllib.request import Request, urlopen
           import re
+          import os
+          import shutil
           class DownloadLinks(HTMLParser):
               links = []
               def handle_starttag(self, tag, attrs):
                   attrs = dict(attrs)
                   if tag == 'a' and 'data-release-download' in attrs:
                       self.links.append(attrs.get('href', ''))
-          root = Path('docs/public-site')
+          source = Path('docs/public-site')
+          root = Path('.pages-published/docs/public-site') if os.environ.get('SITE_CONTENT_REF') else source
+          for verification in source.glob('google*.html'):
+              if not re.fullmatch(r'google[0-9a-f]+\.html', verification.name):
+                  raise SystemExit('Unexpected Google verification filename')
+              if verification.read_text(encoding='utf-8').strip() != f'google-site-verification: {verification.name}':
+                  raise SystemExit('Unexpected Google verification file contents')
+              if root != source:
+                  shutil.copyfile(verification, root / verification.name)
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as env_file:
+              env_file.write(f'PUBLIC_SITE_DIRECTORY={root.as_posix()}\n')
           downloads = DownloadLinks()
           for name in ('index.html', 'privacy.html', 'terms.html'):
               page = (root / name).read_text(encoding='utf-8')
@@ -60,7 +86,7 @@ jobs:
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: docs/public-site
+          path: ${{ env.PUBLIC_SITE_DIRECTORY }}
   deploy:
     needs: prepare
     runs-on: ubuntu-latest
