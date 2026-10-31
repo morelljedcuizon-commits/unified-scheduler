@@ -121,15 +121,10 @@ p {
 }
 
 .brand-mark {
-  display: grid;
-  place-items: center;
   width: 43px;
   height: 43px;
-  border-radius: 12px;
-  background: var(--green);
-  color: white;
-  font-size: 27px;
-  font-weight: 650
+  flex-shrink: 0;
+  object-fit: contain
 }
 
 .brand-second {
@@ -686,9 +681,7 @@ details p {
 
 .site-footer .brand-mark {
   width: 33px;
-  height: 33px;
-  border-radius: 8px;
-  font-size: 21px
+  height: 33px
 }
 
 .site-footer p {
@@ -1071,9 +1064,7 @@ td p,td li {
   }
   .brand-mark {
     width: 35px;
-    height: 35px;
-    border-radius: 9px;
-    font-size: 23px
+    height: 35px
   }
   .site-header nav {
     gap: 14px
