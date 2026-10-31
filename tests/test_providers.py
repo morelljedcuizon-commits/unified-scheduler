@@ -298,6 +298,7 @@ def test_google_oauth_pkce_verified_identity_and_account_selection(repo, tmp_pat
                             "token_uri": "https://oauth2.googleapis.com/token"}}
     path = tmp_path / "client.json"
     path.write_text(json.dumps(config))
+    monkeypatch.setenv("UNIFIED_SCHEDULER_GOOGLE_CLIENT_CONFIG", str(path))
     credentials = MemoryCredentials()
     authorized = Credentials("access", refresh_token="refresh", id_token="signed-token", scopes=list(SCOPES),
                              client_id=config["installed"]["client_id"], client_secret="desktop-client-value",
@@ -309,7 +310,7 @@ def test_google_oauth_pkce_verified_identity_and_account_selection(repo, tmp_pat
     monkeypatch.setattr("unified_scheduler.providers.google.secrets.token_urlsafe", lambda _: "expected-nonce")
     verify = Mock(return_value={"sub": "verified-subject", "email": "person@example.com", "email_verified": True, "nonce": "expected-nonce"})
     monkeypatch.setattr("unified_scheduler.providers.google.id_token.verify_oauth2_token", verify)
-    account = GoogleProvider(repo, credentials).connect(str(path))
+    account = GoogleProvider(repo, credentials).connect()
     assert account.identity == "verified-subject"
     assert account.label == "person@example.com"
     assert factory.call_args.kwargs["autogenerate_code_verifier"] is True

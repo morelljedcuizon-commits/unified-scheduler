@@ -1,0 +1,57 @@
+name: Publish public website
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_publication:
+        description: 'I reviewed the policy and terms and approve publishing the website'
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: inputs.confirm_publication
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check publication details
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          root = Path('docs/public-site')
+          for name in ('index.html', 'privacy.html', 'terms.html'):
+              page = (root / name).read_text(encoding='utf-8')
+              if 'data-publication-draft' in page or re.search(r'\{\{[A-Z_]+\}\}', page):
+                  raise SystemExit(f'{name}: review publication details and remove the draft notice first; see docs/PUBLIC_SITE.md')
+          for name in ('styles.css', '.nojekyll', 'assets/app-icon.ico', 'assets/today-demo.png', 'assets/calendar-demo.png'):
+              if not (root / name).is_file():
+                  raise SystemExit(f'Missing site asset: {name}')
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs/public-site
+  deploy:
+    needs: prepare
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy reviewed website
+        id: deployment
+        uses: actions/deploy-pages@v4

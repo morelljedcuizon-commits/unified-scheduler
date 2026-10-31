@@ -30,6 +30,7 @@ artifacts/
 credentials.json
 client_secret*.json
 oauth_client*.json
+google-oauth-client.json
 token*.json
 secrets/
 .env

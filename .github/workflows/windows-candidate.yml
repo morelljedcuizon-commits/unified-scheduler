@@ -1,0 +1,64 @@
+name: Build Windows release candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      include_google:
+        description: 'Include the configured Desktop OAuth client (requires GOOGLE_DESKTOP_CLIENT_JSON secret)'
+        type: boolean
+        default: true
+        required: true
+
+# This workflow uploads review artifacts only. It cannot create a GitHub Release.
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    environment: release-build
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - name: Prepare app-owned OAuth configuration
+        if: inputs.include_google
+        env:
+          GOOGLE_DESKTOP_CLIENT_JSON: ${{ secrets.GOOGLE_DESKTOP_CLIENT_JSON }}
+        run: |
+          if (-not $env:GOOGLE_DESKTOP_CLIENT_JSON) { throw 'Add the GOOGLE_DESKTOP_CLIENT_JSON Desktop client secret before building with Google.' }
+          python -c "import os; from pathlib import Path; Path(os.environ['RUNNER_TEMP'], 'unified-scheduler-desktop-client.json').write_text(os.environ['GOOGLE_DESKTOP_CLIENT_JSON'], encoding='utf-8')"
+          if ($LASTEXITCODE -ne 0) { throw 'Preparing the Desktop client failed.' }
+      - name: Test, build, inspect and archive
+        env:
+          INCLUDE_GOOGLE: ${{ inputs.include_google }}
+        run: |
+          $releaseArguments = @{}
+          if ($env:INCLUDE_GOOGLE -eq 'true') {
+            $releaseArguments.GoogleClientConfig = Join-Path $env:RUNNER_TEMP 'unified-scheduler-desktop-client.json'
+          } else {
+            $releaseArguments.AllowLocalOnly = $true
+          }
+          .\scripts\release.ps1 @releaseArguments
+      - name: Remove temporary configuration
+        if: always()
+        run: |
+          $temporaryClient = Join-Path $env:RUNNER_TEMP 'unified-scheduler-desktop-client.json'
+          if (Test-Path -LiteralPath $temporaryClient) { Remove-Item -LiteralPath $temporaryClient }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: UnifiedScheduler-windows-candidate
+          path: |
+            dist/candidate-*/*.zip
+            dist/candidate-*/*.sha256
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0

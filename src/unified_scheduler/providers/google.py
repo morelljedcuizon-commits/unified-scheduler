@@ -6,7 +6,6 @@ from datetime import date, datetime, time, timedelta, timezone as dt_timezone
 import hashlib
 import json
 import logging
-from pathlib import Path
 import random
 import secrets
 import time as clock
@@ -19,15 +18,18 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from oauthlib.oauth2 import AccessDeniedError
 import google_auth_httplib2
 import httplib2
 import requests
 
+from ..google_oauth import load_google_client_config, read_google_client_config
 from ..models import Calendar, Event, SourceAccount, stable_event_id
 from .errors import OfflineError, ProviderError, ReauthenticationRequired
 
-SCOPES = ("openid", "https://www.googleapis.com/auth/userinfo.email",
-          "https://www.googleapis.com/auth/calendar.readonly")
+CALENDAR_SCOPES = ("https://www.googleapis.com/auth/calendar.calendarlist.readonly",
+                   "https://www.googleapis.com/auth/calendar.events.readonly")
+SCOPES = ("openid", "https://www.googleapis.com/auth/userinfo.email", *CALENDAR_SCOPES)
 MAX_PAGES = 200
 MAX_EVENTS = 100_000
 
@@ -103,28 +105,20 @@ class GoogleProvider:
 
     @staticmethod
     def _read_config(path: str) -> dict:
-        try:
-            config = json.loads(Path(path).read_text(encoding="utf-8-sig"))
-            installed = config["installed"]
-            if (not installed.get("client_id", "").endswith(".apps.googleusercontent.com")
-                    or installed.get("auth_uri") != "https://accounts.google.com/o/oauth2/auth"
-                    or installed.get("token_uri") != "https://oauth2.googleapis.com/token"):
-                raise ValueError
-            return config
-        except (OSError, ValueError, KeyError, TypeError):
-            raise ProviderError("Select a valid Google OAuth Desktop app client JSON downloaded from Google Cloud. See README for setup.") from None
+        return read_google_client_config(path)
 
-    def connect(self, client_config_path: str) -> SourceAccount:
+    def connect(self, client_config_path: str | None = None) -> SourceAccount:
         return self._authorize(client_config_path)
 
-    def reconnect(self, account_id: str, client_config_path: str) -> SourceAccount:
+    def reconnect(self, account_id: str, client_config_path: str | None = None) -> SourceAccount:
         account = self.repo.get_account(account_id)
         if not account or account.kind != "google":
             raise ProviderError("This Google account no longer exists.")
         return self._authorize(client_config_path, expected_account_id=account_id)
 
-    def _authorize(self, path: str, expected_account_id: str | None = None) -> SourceAccount:
-        config = self._read_config(path)
+    def _authorize(self, path: str | None, expected_account_id: str | None = None) -> SourceAccount:
+        config = (self._read_config(path) if path else
+                  load_google_client_config(self.repo.get_setting("google_client_config", "")))
         nonce = secrets.token_urlsafe(32)
         try:
             flow = DesktopFlow.from_client_config(config, scopes=list(SCOPES), autogenerate_code_verifier=True)
@@ -140,8 +134,12 @@ class GoogleProvider:
             if (not claims.get("sub") or not claims.get("email") or claims.get("email_verified") is not True
                     or claims.get("nonce") != nonce):
                 raise ProviderError("Google's account identity could not be verified. Please try again.")
-            granted = credentials.granted_scopes or credentials.scopes or []
-            if "https://www.googleapis.com/auth/calendar.readonly" not in granted:
+            granted = (credentials.granted_scopes if credentials.granted_scopes is not None
+                       else credentials.scopes) or []
+            # Earlier builds requested calendar.readonly. Google can return a
+            # previously granted broader scope; retain those existing accounts.
+            if (not set(CALENDAR_SCOPES).issubset(granted)
+                    and "https://www.googleapis.com/auth/calendar.readonly" not in granted):
                 raise ProviderError("Calendar read access was not granted. Please reconnect and allow the requested permissions.")
             account_id = _identifier("google", claims["sub"])
             if expected_account_id and account_id != expected_account_id:
@@ -156,11 +154,13 @@ class GoogleProvider:
             return account
         except ProviderError:
             raise
+        except AccessDeniedError:
+            raise ProviderError("Google sign-in was not approved. You can try again. If Google says this app is restricted, contact the app publisher.") from None
         except (requests.RequestException, TransportError):
             raise OfflineError("Google authorization could not reach its servers. Check your connection and try again.") from None
         except Exception:
             # OAuth exception messages may contain authorization codes or full redirect URLs.
-            raise ProviderError("Google authorization was cancelled, timed out, or failed. Check the Desktop OAuth client configuration and test-user access, then retry.") from None
+            raise ProviderError("Google sign-in was cancelled, timed out, or failed. Try Connect Google Account again. If Google says access is blocked, contact the app publisher.") from None
 
     def _load_credentials(self, account: SourceAccount) -> Credentials:
         payload = self.credentials.get(account.credential_key)

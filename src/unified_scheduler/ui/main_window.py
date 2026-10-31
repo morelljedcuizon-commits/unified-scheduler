@@ -9,7 +9,7 @@ from PySide6.QtCore import QDate, QThreadPool, QTimer, Qt, QUrl
 from PySide6.QtGui import QAction, QColor, QDesktopServices, QIcon, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication, QCalendarWidget, QCheckBox, QColorDialog, QComboBox, QDateEdit,
-    QFileDialog, QFormLayout, QFrame, QHBoxLayout, QLabel, QLineEdit, QMainWindow,
+    QFormLayout, QFrame, QHBoxLayout, QLabel, QLineEdit, QMainWindow,
     QMenu, QMessageBox, QPushButton, QScrollArea, QSpinBox, QSplitter,
     QSizePolicy, QStackedWidget, QSystemTrayIcon, QVBoxLayout, QWidget,
 )
@@ -641,7 +641,8 @@ class MainWindow(QMainWindow):
                     last = datetime.fromisoformat(account.last_sync).astimezone(ZoneInfo(self.timezone)).strftime("%d %b %Y at %H:%M")
                 except ValueError:
                     last = "Available"
-            box.addWidget(text_label(f"{account.status.title()} · Last successful sync: {last}", "muted"))
+            status = "Reconnect required" if account.status == "reauthenticate" else account.status.title()
+            box.addWidget(text_label(f"{status} · Last successful sync: {last}", "muted"))
             if account.error:
                 box.addWidget(text_label(account.error + " Cached events remain available.", "muted"))
             for calendar in self.repo.list_calendars(account.id):
@@ -654,7 +655,7 @@ class MainWindow(QMainWindow):
                 edit = QPushButton("Edit calendar")
                 edit.clicked.connect(lambda checked=False, a=account: self.add_moodle(account=a))
             else:
-                edit = QPushButton("Reconnect")
+                edit = QPushButton("Reconnect Google account")
                 edit.clicked.connect(lambda checked=False, a=account: self.connect_google(account=a))
             controls.addWidget(edit)
             remove = QPushButton("Remove" if account.kind == "moodle" else "Disconnect")
@@ -707,14 +708,8 @@ class MainWindow(QMainWindow):
     def connect_google(self, checked=False, account=None):
         if self.demo or self.busy:
             return
-        config = self.repo.get_setting("google_client_config", "")
-        if not config or not Path(config).is_file():
-            config, _ = QFileDialog.getOpenFileName(self, "Select Google Desktop OAuth client JSON (see README)", "", "Google client configuration (*.json)")
-            if not config:
-                return
-            self.repo.set_setting("google_client_config", config)
         provider = self.google_provider()
-        job = (lambda: provider.reconnect(account.id, config)) if account else (lambda: provider.connect(config))
+        job = (lambda: provider.reconnect(account.id)) if account else provider.connect
         self.run_job(job, lambda _: self.after_connection(), "Waiting for Google authorization in your browser…")
 
     def after_connection(self):
@@ -793,20 +788,8 @@ class MainWindow(QMainWindow):
         box.addWidget(text_label("Notifications work while Unified Scheduler is running, including in the tray. All-day reminders use 9:00 AM. Visual deduplication never deletes source events.", "muted"))
         layout.addWidget(card)
         card, box = self.card()
-        box.addWidget(text_label("Google OAuth configuration", "section"))
-        config = QLineEdit(self.repo.get_setting("google_client_config", ""))
-        config.setPlaceholderText("Path to your Desktop OAuth client JSON")
-        row = QHBoxLayout()
-        row.addWidget(config, 1)
-        browse = QPushButton("Browse…")
-        def choose_config():
-            path, _ = QFileDialog.getOpenFileName(self, "Google Desktop client JSON", "", "JSON (*.json)")
-            if path:
-                config.setText(path)
-        browse.clicked.connect(choose_config)
-        row.addWidget(browse)
-        box.addLayout(row)
-        box.addWidget(text_label("Create a Desktop application client in Google Cloud. Account tokens are kept separately in the OS credential store. See README for setup.", "muted"))
+        box.addWidget(text_label("Google sign-in", "section"))
+        box.addWidget(text_label("Choose Connect Google account on the Accounts page. Sign in securely in your browser, then return here. Your connection is remembered on this device; no configuration file is needed from you.", "muted"))
         layout.addWidget(card)
         save = QPushButton("Save settings")
         save.setObjectName("primary")
@@ -828,7 +811,7 @@ class MainWindow(QMainWindow):
                                "default_reminder": None if default_reminder.currentData() < 0 else default_reminder.currentData(), "sync_minutes": interval.value(),
                                "sync_past_days": past.value(), "sync_future_days": future.value(),
                                "minimize_to_tray": tray.isChecked(), "start_with_windows": startup.isChecked(),
-                               "visual_dedup": dedup.isChecked(), "google_client_config": config.text().strip()}.items():
+                               "visual_dedup": dedup.isChecked()}.items():
                 self.repo.set_setting(key, value)
             self.timezone = timezone
             self.palette_colors = apply_theme(QApplication.instance(), theme.currentText().lower())

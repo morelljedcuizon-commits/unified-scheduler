@@ -13,6 +13,7 @@ Unified Scheduler is a local native Qt application. The UI uses services for per
 | `aggregation` | Calendar visibility, range/text filtering, local recurrence, completion decoration and display deduplication |
 | `timeutils` | ISO date/time interpretation and display timezone helpers |
 | `credentials` | Windows Credential Manager access through `keyring` |
+| `google_oauth` | Resolve and validate the app-owned Google Desktop OAuth configuration |
 | `providers.google` | Desktop OAuth, verified account identities, calendar listing and Google event polling |
 | `providers.moodle` | HTTPS feed download, ICS validation and recurrence expansion |
 | `sync` | Configured polling window and per-source success/failure state |
@@ -40,6 +41,12 @@ Polling occurs on startup, at the configured interval while running and on expli
 ## Credentials and trust boundaries
 
 The credential service stores serialized Google OAuth credentials and full Moodle subscription URLs in the operating system's credential store, referenced by opaque keys in SQLite. No plaintext fallback is supplied. Local-only use remains possible if credential storage is unavailable.
+
+The app owner supplies one Google Desktop OAuth client for a build. Configuration lookup checks `UNIFIED_SCHEDULER_GOOGLE_CLIENT_CONFIG`, the bundled `unified_scheduler/resources/google-oauth-client.json`, the source checkout's `local-config/google-oauth-client.json` (only when running from source), then the legacy `google_client_config` setting. The selected configuration must be a valid Desktop client with Google's authorization/token endpoints. An invalid selected file fails without falling through to a different client. Users start browser authorization through Connect or Reconnect; there is no configuration picker in the UI.
+
+The build validates and copies only the required Desktop OAuth fields into its application resources. This installed-app client identifies the application and is recoverable from the distribution; it does not authenticate any user by itself. PKCE, state handling and nonce/verified-identity checks protect individual authorization attempts. Account tokens remain separate in the credential vault, and token renewal uses the client information already stored with each authorized account. No OAuth token or personal calendar data is part of the packaged application.
+
+New Google authorizations request `openid`, `userinfo.email`, `calendar.calendarlist.readonly` and `calendar.events.readonly` (full Google scope URLs are defined in `providers/google.py`). Calendar listing and event reads are the only Calendar API operations. Both Calendar permissions must be granted; an explicit empty or partial grant is rejected. Existing `calendar.readonly` grants remain usable to avoid breaking saved accounts; removing a historical broader grant requires the user to revoke it in Google and authorize again. Account identity verification is distinct from Google approving the application itself.
 
 The vault service namespace includes a hash of the data-directory path. Long credentials use bounded chunks and a generation manifest to respect Windows generic-credential blob limits. A new manifest is committed only after all chunks are written; failed updates retain the prior complete generation. Moving a data directory changes the namespace, so sources must be reconnected after such a move.
 
@@ -70,4 +77,4 @@ Do not manually copy a live WAL database's main file alone. Close the app before
 
 The application relies on the running Windows process and Qt tray support for reminders. All-day reminders are anchored at 09:00 in the display timezone before applying the configured offset. Old appointment reminders expire after 24 hours; incomplete tasks can receive one overdue reminder, while recurring task instances more than a day old are skipped to avoid a backlog burst. Delivery is persisted before the UI shows a notification, favoring duplicate prevention if the process exits during delivery.
 
-No Windows service or Task Scheduler reminder process is installed. The optional startup setting launches the normal application at user sign-in. The PyInstaller configuration produces a portable folder containing a Windows executable and its runtime dependencies; it does not provision online accounts or package credentials.
+No Windows service or Task Scheduler reminder process is installed. The optional startup setting launches the normal application at user sign-in. The PyInstaller configuration produces a portable folder containing a Windows executable, its runtime dependencies and an optional app-owned Desktop OAuth configuration; it does not provision online accounts or package user credentials.

@@ -2,6 +2,14 @@
 
 A native Windows desktop calendar and task manager built with Python, PySide6 and SQLite. Today brings local tasks, Google Calendar events and Moodle deadlines into one view. Local planning works without an account, internet connection, backend or paid service.
 
+## Public release preparation
+
+This is the existing **Windows desktop app**. The website in [docs/public-site](docs/public-site/index.html) introduces it and hosts its privacy/terms pages; it is not a web calendar. [GitHub Releases](https://github.com/morelljedcuizon-commits/unified-scheduler/releases) is the intended download location; a published installer or verified Google OAuth status is not assumed.
+
+The developer confirmed on October 31, 2026 that the Google API works and testing is complete, and authorized publication of the website. The original brief reported External / Testing; current Cloud publishing/verification status has not been independently checked. Website publication and Google's approval of the brand/scopes are separate milestones. See [Google OAuth publication](docs/GOOGLE_OAUTH_PUBLICATION.md) for any remaining Console steps, [website deployment](docs/PUBLIC_SITE.md), and [Windows release instructions](docs/RELEASE.md). The [release audit](docs/RELEASE_AUDIT.md) and [security review](docs/SECURITY_REVIEW.md) record the earlier preparation checks.
+
+Publisher: **Unified Scheduler**. Support and privacy contact: **cuizon.morell@gmail.com**. A developer-owned domain, live website URLs, a valid Desktop client and Google's review outcome remain owner/Google configuration.
+
 ## Run from source
 
 Use 64-bit Python **3.12 or newer** on Windows. In PowerShell, from this folder:
@@ -12,7 +20,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m unified_scheduler
 ```
 
-The first-launch screen offers Google, Moodle or a local-only workspace. Google requires your own legitimate Desktop OAuth client configuration; Moodle requires a private calendar export URL. Neither is needed to start the app.
+The first-launch screen offers Google, Moodle or a local-only workspace. In a Google-enabled build, users choose **Connect Google account** and sign in; they do not download or select a JSON file. The app owner configures Google once before distribution, as described below. Moodle requires a private calendar export URL. Neither account is needed to start the app.
 
 Inspect a populated workspace without accounts:
 
@@ -43,22 +51,45 @@ An alternate data directory is useful for development:
 
 Google and Moodle are read-only in this release. Marking an imported deadline complete records a personal tracking state; it does not submit coursework or change the remote event. Local events are never copied to an external calendar.
 
-## Google setup
+## Connect a Google account
+
+1. In the first-launch screen or **Accounts**, choose **Connect Google account**.
+2. Choose your Google account and approve read-only Calendar access in your system browser.
+3. Return to Unified Scheduler; your calendars load automatically. Repeat to connect another account.
+
+Sign-in starts from the app, but Google requires authorization in the system browser rather than an embedded login form. Users never supply a JSON configuration or enter their Google password into Unified Scheduler. The app uses an authorization-code flow with PKCE and a loopback redirect on `127.0.0.1`. User access/refresh tokens are stored separately in Windows Credential Manager and renewed automatically while permitted. See Google's [desktop authorization documentation](https://developers.google.com/identity/protocols/oauth2/native-app) and [secure-browser policy](https://developers.google.com/identity/protocols/oauth2/policies#use-secure-browsers).
+
+Use the Accounts page to choose calendars and reconnect or disconnect an individual account. Disconnect removes that account's local credentials and cached events; it does not delete anything in Google. You can also revoke access in your Google account's third-party connections settings.
+
+If this build reports that Google sign-in is not configured, the app owner needs to complete the setup below and supply a Google-enabled build. Local calendars and Moodle remain available.
+
+## Google setup for the app owner
+
+Complete this once for your application, rather than once per user. The downloaded JSON identifies your Desktop OAuth application; it is not a calendar export or a user's login token. Uploading the source to GitHub does not register the application with Google. This repository does not include an operational OAuth client configuration.
 
 1. Create or select a Google Cloud project and enable the **Google Calendar API**.
 2. Under **Google Auth platform → Branding**, supply the application's name, support email and contact information.
 3. In **Audience**, choose **External** when accounts outside your Workspace organization will use the app. While publishing status is Testing, add every intended account under **Test users**.
-4. Under **Data Access**, configure the requested scopes: `openid`, `https://www.googleapis.com/auth/userinfo.email`, and `https://www.googleapis.com/auth/calendar.readonly`. Review Google's verification requirements before distributing the app publicly.
-5. Under **Clients**, create an OAuth client with application type **Desktop app**. Download its JSON configuration and keep it outside source control.
-6. In Unified Scheduler, choose **Connect Google Account**, select that JSON configuration and complete Google's consent screen in your system browser. Repeat to connect another account.
+4. Under **Data Access**, configure the requested scopes: `openid`, `https://www.googleapis.com/auth/userinfo.email`, `https://www.googleapis.com/auth/calendar.calendarlist.readonly`, and `https://www.googleapis.com/auth/calendar.events.readonly`. These cover calendar selection and reading events, without calendar writing. See the scope justifications and verification steps in [the publication guide](docs/GOOGLE_OAUTH_PUBLICATION.md).
+5. Under **Clients**, create an OAuth client with application type **Desktop app**. Download its JSON configuration and save it as `local-config/google-oauth-client.json` in this project. This location is ignored by Git.
+6. Run from source or build the executable using the commands below. The app loads this configuration automatically, and the build includes the validated Desktop client configuration for your users. Test **Connect Google account** with an allowed account before distributing the build.
 
 These steps follow Google's [Calendar Python quickstart](https://developers.google.com/workspace/calendar/api/quickstart/python) and [OAuth consent configuration guide](https://developers.google.com/workspace/guides/configure-oauth-consent). The Cloud console may update its labels over time.
 
-The app uses an authorization-code flow with PKCE and a loopback redirect on `127.0.0.1`. Your Google password is entered only on Google's page. A desktop client configuration identifies the application; user access/refresh tokens are stored separately in Windows Credential Manager. See Google's [desktop authorization documentation](https://developers.google.com/identity/protocols/oauth2/native-app).
+To keep the developer's configuration elsewhere, set an absolute path before running or building:
+
+```powershell
+$env:UNIFIED_SCHEDULER_GOOGLE_CLIENT_CONFIG = 'C:\private-config\google-oauth-client.json'
+.\.venv\Scripts\python.exe -m unified_scheduler
+```
+
+Configuration lookup checks this environment override, the bundled application resource, the source checkout's `local-config/google-oauth-client.json`, then a previously saved configuration path from older versions. An invalid selected configuration produces an error instead of silently switching clients. The source checkout path is not used by the packaged executable. Existing account tokens continue to refresh from Windows Credential Manager without the original JSON file.
+
+Earlier versions requested the broader `calendar.readonly` permission. Existing tokens remain usable while Google permits; new authorizations request the narrower pair above. After updating the Cloud project, use **Reconnect Google account** to authorize again. To remove an old broader grant entirely, revoke the app in Google's third-party connections first, then reconnect. Do not disconnect the local account merely to renew consent if you want to retain its cache.
+
+A Desktop OAuth client is a public client: its bundled client ID and client secret are recoverable from the distributed app and are not a confidential server credential. Keep the downloaded configuration out of GitHub source control, and distribute only a Desktop client through the build. Never bundle a Web application client secret, service-account key, user token file, database or Moodle URL. See Google's [installed-app OAuth explanation](https://developers.google.com/identity/protocols/oauth2#installed) and [client-credential policy](https://developers.google.com/identity/protocols/oauth2/policies#secure-client-credentials).
 
 For an External app in Testing, Google generally issues refresh tokens that expire after seven days when Calendar scopes are requested. Revocation, organization policy and token limits can also require reconnection. Publishing and scope verification depend on the app's audience and use case; an unverified personal testing project is not a verified public product. See [Google's token expiration guidance](https://developers.google.com/identity/protocols/oauth2#expiration).
-
-Use the Accounts page to choose calendars and reconnect or disconnect an individual account. Disconnect removes that account's local credentials and cached events; it does not delete anything in Google. You can also revoke access in your Google account's third-party connections settings.
 
 ## Moodle / MSU-IIT MOLE setup
 
@@ -120,6 +151,16 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
 
 The script installs development/build dependencies, runs tests and uses `UnifiedScheduler.spec`. To reuse an already installed environment, add `-SkipInstall`.
 
+Quit an executable running from the output folder before rebuilding it, or use `-DistPath dist\new-build`. For a tested ZIP and SHA-256 checksum, use `scripts\release.ps1` as described in [Windows release instructions](docs/RELEASE.md). The manual **Build Windows release candidate** GitHub Actions workflow uploads review artifacts and never publishes a GitHub Release.
+
+For Google sign-in, first save your Desktop client configuration to `local-config/google-oauth-client.json`, or supply its location for this build:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1 -GoogleClientConfig 'C:\private-config\google-oauth-client.json'
+```
+
+The build validates the Desktop client and bundles only the required OAuth configuration in `_internal/unified_scheduler/resources/google-oauth-client.json`. Users of that build only need to click **Connect Google account**. A build without a configuration still supports local calendars and Moodle and prints a message that Google sign-in is unavailable; an explicitly supplied missing or invalid configuration fails the build. The `UNIFIED_SCHEDULER_GOOGLE_CLIENT_CONFIG` environment override also works for direct builds.
+
 Direct build:
 
 ```powershell
@@ -129,7 +170,7 @@ $env:PYINSTALLER_CONFIG_DIR = Join-Path $PWD '.build-cache'
 
 Run `dist\UnifiedScheduler\UnifiedScheduler.exe`. Distribute the **entire** `dist\UnifiedScheduler` directory, including `_internal`; the executable depends on those files. This is a windowed portable folder build, not an installer. The spec bundles Qt, timezone data and Google discovery data. See [PyInstaller's usage guide](https://pyinstaller.org/en/stable/usage.html).
 
-No private OAuth configuration, database, Moodle URL or token is bundled. Production distribution should add your release signing and installer/update process as appropriate. A self-built executable is not code-signed by this project.
+Only the configured application's Desktop OAuth identity is bundled; no user database, Moodle URL or account token is included. Production distribution should add your release signing and installer/update process as appropriate. A self-built executable is not code-signed by this project.
 
 ## Project layout
 
@@ -141,6 +182,7 @@ src/unified_scheduler/
     aggregation.py   Unified queries and local recurrence
     timeutils.py     Timezone and all-day helpers
     credentials.py   OS credential storage
+    google_oauth.py  App-owned Google Desktop client configuration
     reminders.py     Persistent reminder eligibility and state
     sync.py          Provider coordination and sync windows
     demo.py          Isolated sample workspace

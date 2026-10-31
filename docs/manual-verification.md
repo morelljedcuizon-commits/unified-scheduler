@@ -14,16 +14,19 @@ Use test calendars and harmless sample tasks. Do not put private URLs, access to
 
 ## Google consent and multi-account isolation
 
-1. Complete the README's Google Cloud setup with an External Desktop OAuth client and two allowed test accounts.
-2. Connect the first account. Confirm the system browser opens Google's account chooser and read-only Calendar consent. Complete consent and return to the app.
+1. Complete the README's app-owner Google setup with an External Desktop OAuth client and two allowed test accounts. Save the configuration to `local-config/google-oauth-client.json`, or supply the documented environment override.
+2. Connect the first account. Confirm there is no JSON file picker and the system browser opens Google's account chooser and read-only Calendar consent. Complete consent and return to the app.
 3. Connect the second account. Check both verified identities and their calendars appear independently.
 4. Create events with the same title in both accounts. Sync repeatedly. Both should remain, with their own source/calendar identities, and neither should multiply.
 5. Hide one calendar. Its events should disappear from views without disconnecting the account. Show it again.
 6. Change an event's date in Google, delete another, and cancel one occurrence of a recurring series. Sync and check the old time/deleted/cancelled occurrences disappear within the fetched window.
 7. Test a calendar with enough events to require pagination and a recurring event spanning a daylight-saving change in another timezone. Compare displayed instants with Google Calendar.
 8. Close and reopen after the access token expires; synchronization should refresh authorized credentials without a token file appearing in the workspace.
-9. Revoke this app from one Google account's third-party access settings. Sync, confirm reconnection is requested and cached items remain available. Reconnect the same account.
+9. Revoke this app from one Google account's third-party access settings. Sync, confirm reconnection is requested and cached items remain available. Reconnect the same account without a JSON file picker. Selecting a different account during Reconnect must leave the original account intact.
 10. Disconnect one account. Verify its local cached events disappear while the other account remains intact. Confirm the remote Google events were not deleted.
+11. During fresh consent, decline calendar-list access, then repeat declining event access. Neither attempt should store an incomplete account. Cancel consent and confirm a safe retry message without private response details.
+12. Select a different account during **Reconnect Google account**. The app should reject the mismatch and preserve the original account, token and cache. The separate **Connect** action should add the other account independently.
+13. After the owner completes the [Production and verification guide](GOOGLE_OAUTH_PUBLICATION.md), test an account never added as a tester, using the exact release client. Record actual Console status, warnings and result. Production alone does not establish verification approval. Reauthorize old Testing accounts and observe refresh after the former seven-day window; never infer permanent authorization from one successful login.
 
 ## Moodle feeds
 
@@ -49,10 +52,19 @@ Use test calendars and harmless sample tasks. Do not put private URLs, access to
 
 ## Packaged build
 
-1. Run `scripts\build.ps1` and copy the entire `dist\UnifiedScheduler` folder to a test location.
+1. Run `scripts\build.ps1 -GoogleClientConfig 'C:\private-config\google-oauth-client.json'` with your legitimate Desktop client and copy the entire `dist\UnifiedScheduler` folder to a test location.
 2. Run `UnifiedScheduler.exe --demo --smoke-test`; it should open briefly and exit successfully without missing-module errors.
-3. Run the executable normally on a Windows account without the development Python environment. Repeat a local save/restart, credential-vault connection and tray reminder check.
-4. Verify the distribution contains no personal database, OAuth client configuration or secret token files. Public releases need a deliberate signing/distribution process; this project does not supply one.
+3. Run the executable normally on a Windows account without the development Python environment, source checkout or configuration environment override. Confirm Google connection opens the browser without requesting a file. Repeat a local save/restart, credential-vault connection and tray reminder check.
+4. Verify the distribution includes only the validated Desktop client configuration at `_internal/unified_scheduler/resources/google-oauth-client.json`, with no personal database, Moodle URL, Web client secret, service-account key or user token files. Public releases need a deliberate signing/distribution process; this project does not supply one.
+5. In a separate build without a configuration, confirm local calendars and Moodle still work and Connect Google reports that this build is not configured, without requesting a JSON file or opening a browser. An explicitly supplied missing or invalid configuration must fail the build.
+6. Run `scripts\release.ps1` using the [release guide](RELEASE.md). Check the embedded executable icon, ZIP extraction, checksum, included license/readme/build manifest and content-check result. A startup smoke test does not complete the real-account checks above. Keep a running development copy open and verify a separate candidate can be built without replacing its files.
+
+## Website and publication
+
+1. Review the actual homepage, privacy and terms with the publisher. Confirm support/privacy contact and implemented data handling. Confirm there is no invented Google verification badge, published installer or release version.
+2. Serve `docs/public-site` and check navigation, keyboard focus, download/FAQ links and every legal page at narrow/mobile and wide/desktop sizes. Test the deployed site without signing in, including HTTPS and custom-domain redirects.
+3. Complete domain ownership checks and provide actual deployed URLs in Google Cloud. Follow [PUBLIC_SITE.md](PUBLIC_SITE.md); a working GitHub Pages URL alone is not proof of Google ownership verification.
+4. Run GitHub's manual Pages and Windows candidate workflows on the reviewed branch. Inspect their logs and artifacts without sharing private configuration. No GitHub Release should appear unless the owner publishes it manually.
 
 Record the app version, Windows version, Python/Qt version for source runs, test date, scenario and result. Use redacted descriptions of failures and keep account/feed values private.
 

@@ -69,6 +69,12 @@ def main(argv=None):
                 from googleapiclient.discovery import build
                 from unified_scheduler.providers.moodle import parse_ics
                 from unified_scheduler.providers.google import GoogleProvider
+                from unified_scheduler import google_oauth
+                bundled_client = Path(google_oauth.__file__).resolve().parent / "resources" / "google-oauth-client.json"
+                if bundled_client.is_file():
+                    # Inspect the bundled application identity without opening a
+                    # browser, loading user tokens or making a network request.
+                    google_oauth.read_google_client_config(bundled_client)
                 service = build("calendar", "v3", http=httplib2.Http(),
                                 cache_discovery=False, static_discovery=True)
                 service.close()

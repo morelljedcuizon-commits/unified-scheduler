@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone as dt_timezone
+from datetime import date, datetime, timedelta, timezone as dt_timezone
 from threading import Lock
 from zoneinfo import ZoneInfo
 
@@ -20,6 +20,15 @@ class SyncResult:
     error: str = ""
 
 
+def sync_window(repo) -> tuple[date, date, str]:
+    """Use the same configured date range for connection tests and polling."""
+    zone = repo.get_setting("timezone", "Asia/Manila")
+    today = datetime.now(ZoneInfo(zone)).date()
+    past = max(0, min(1825, int(repo.get_setting("sync_past_days", 30))))
+    future = max(1, min(1825, int(repo.get_setting("sync_future_days", 180))))
+    return today - timedelta(days=past), today + timedelta(days=future + 1), zone
+
+
 class SyncService:
     def __init__(self, repo, credentials, *, google=None, moodle=None):
         self.repo = repo
@@ -31,11 +40,7 @@ class SyncService:
         if not self._lock.acquire(blocking=False):
             return []
         try:
-            zone = self.repo.get_setting("timezone", "Asia/Manila")
-            today = datetime.now(ZoneInfo(zone)).date()
-            past = max(0, min(1825, int(self.repo.get_setting("sync_past_days", 30))))
-            future = max(1, min(1825, int(self.repo.get_setting("sync_future_days", 180))))
-            start, end = today - timedelta(days=past), today + timedelta(days=future + 1)
+            start, end, zone = sync_window(self.repo)
             results = []
             for account in self.repo.list_accounts():
                 if account.kind not in ("google", "moodle"):
