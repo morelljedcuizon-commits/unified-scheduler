@@ -151,7 +151,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
 
 The script installs development/build dependencies, runs tests and uses `UnifiedScheduler.spec`. To reuse an already installed environment, add `-SkipInstall`.
 
-Quit an executable running from the output folder before rebuilding it, or use `-DistPath dist\new-build`. For a tested ZIP and SHA-256 checksum, use `scripts\release.ps1` as described in [Windows release instructions](docs/RELEASE.md). The manual **Build Windows release candidate** GitHub Actions workflow uploads review artifacts and never publishes a GitHub Release.
+Quit an executable running from the output folder before rebuilding it, or use `-DistPath dist\new-build`. For a tested ZIP and SHA-256 checksum, use `scripts\release.ps1` as described in [Windows release instructions](docs/RELEASE.md). Add `-BuildInstaller` with Inno Setup installed to also produce a Windows Setup executable. The manual **Build Windows release candidate** GitHub Actions workflow uploads review artifacts and never publishes a GitHub Release.
 
 For Google sign-in, first save your Desktop client configuration to `local-config/google-oauth-client.json`, or supply its location for this build:
 
@@ -168,9 +168,9 @@ $env:PYINSTALLER_CONFIG_DIR = Join-Path $PWD '.build-cache'
 .\.venv\Scripts\python.exe -m PyInstaller --clean --noconfirm .\UnifiedScheduler.spec
 ```
 
-Run `dist\UnifiedScheduler\UnifiedScheduler.exe`. Distribute the **entire** `dist\UnifiedScheduler` directory, including `_internal`; the executable depends on those files. This is a windowed portable folder build, not an installer. The spec bundles Qt, timezone data and Google discovery data. See [PyInstaller's usage guide](https://pyinstaller.org/en/stable/usage.html).
+Run `dist\UnifiedScheduler\UnifiedScheduler.exe`. Distribute the **entire** `dist\UnifiedScheduler` directory, including `_internal`; the executable depends on those files. The PyInstaller output is a portable folder. The optional Inno Setup installer packages that folder, installs for the current Windows user, creates a Start menu shortcut and provides an uninstaller. The spec bundles Qt, timezone data and Google discovery data. See [PyInstaller's usage guide](https://pyinstaller.org/en/stable/usage.html).
 
-Only the configured application's Desktop OAuth identity is bundled; no user database, Moodle URL or account token is included. Production distribution should add your release signing and installer/update process as appropriate. A self-built executable is not code-signed by this project.
+Only the configured application's Desktop OAuth identity is bundled; no user database, Moodle URL or account token is included. Uninstalling preserves per-user data and account credentials; follow the privacy policy for full removal. Code signing and automatic updates are not configured.
 
 ## Project layout
 
@@ -198,4 +198,4 @@ UnifiedScheduler.spec
 
 This release uses reliable full-window polling rather than incremental sync tokens or push notifications. Each successful calendar fetch replaces that calendar's cache; failed fetches retain previous data. This avoids combining unsupported incremental query parameters; Google's [incremental sync guide](https://developers.google.com/workspace/calendar/api/guides/sync) describes the alternative protocol.
 
-Google event writing, two-way Moodle synchronization, a terminated-process reminder service, an installer, code signing and automatic updates are outside this release. Local recurring events support daily, weekly and monthly repetition; edits operate on the local series, while completion/reminders can be tracked per occurrence. Calendar cache contents are constrained by provider access and configured/exported dates.
+Google event writing, two-way Moodle synchronization, a terminated-process reminder service, code signing and automatic updates are outside this release. Local recurring events support daily, weekly and monthly repetition; edits operate on the local series, while completion/reminders can be tracked per occurrence. Calendar cache contents are constrained by provider access and configured/exported dates.

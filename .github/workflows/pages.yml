@@ -29,15 +29,34 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
+          from html.parser import HTMLParser
+          from urllib.request import Request, urlopen
           import re
+          class DownloadLinks(HTMLParser):
+              links = []
+              def handle_starttag(self, tag, attrs):
+                  attrs = dict(attrs)
+                  if tag == 'a' and 'data-release-download' in attrs:
+                      self.links.append(attrs.get('href', ''))
           root = Path('docs/public-site')
+          downloads = DownloadLinks()
           for name in ('index.html', 'privacy.html', 'terms.html'):
               page = (root / name).read_text(encoding='utf-8')
+              downloads.feed(page)
               if 'data-publication-draft' in page or re.search(r'\{\{[A-Z_]+\}\}', page):
                   raise SystemExit(f'{name}: review publication details and remove the draft notice first; see docs/PUBLIC_SITE.md')
           for name in ('styles.css', '.nojekyll', 'assets/app-icon.ico', 'assets/today-demo.png', 'assets/calendar-demo.png'):
               if not (root / name).is_file():
                   raise SystemExit(f'Missing site asset: {name}')
+          for url in set(downloads.links):
+              if not url.startswith('https://github.com/morelljedcuizon-commits/unified-scheduler/releases/latest/download/'):
+                  raise SystemExit('Unexpected installer download URL')
+              try:
+                  with urlopen(Request(url, method='HEAD'), timeout=30) as response:
+                      if response.status != 200:
+                          raise SystemExit('Installer download is not public yet')
+              except Exception:
+                  raise SystemExit('Publish the approved installer release before deploying its download button; see docs/RELEASE.md') from None
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

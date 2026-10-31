@@ -20,7 +20,31 @@ The script creates an isolated `dist/candidate-<timestamp>-<id>/` directory, run
 
 For a development folder without the candidate archive, use `scripts/build.ps1` as in README. `-DistPath dist\new-build` avoids a running output copy. The script checks whether that exact output executable is running before PyInstaller can replace it. Keep output inside the workspace. `--data-dir` is a runtime option, never a packaging input.
 
-Distribute the entire `UnifiedScheduler` folder, including `_internal`, preferably as the generated ZIP. Tell users to **extract all files** before launching `UnifiedScheduler.exe`; there is no installer, auto-update service or code signature. Windows may show reputation/unsigned-app warnings. Code signing and any installer must be prepared and tested separately; do not tell users to disable Windows protections. Per-user data is created on first run, outside the installation folder. See [PyInstaller's operating modes](https://pyinstaller.org/en/stable/operating-mode.html).
+For the portable ZIP, distribute the entire `UnifiedScheduler` folder, including `_internal`. Users must **extract all files** before launching `UnifiedScheduler.exe`. Alternatively, build the installer below. Neither package has an auto-update service or code signature. Windows may show reputation/unsigned-app warnings; do not tell users to disable Windows protections. Per-user data is created on first run, outside the installation folder. See [PyInstaller's operating modes](https://pyinstaller.org/en/stable/operating-mode.html).
+
+## Windows installer and direct website download
+
+Install [Inno Setup](https://jrsoftware.org/isdl.php) (6.3 or newer), then build both portable and installable packages:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\release.ps1 -GoogleClientConfig 'C:\private-config\google-oauth-client.json' -BuildInstaller
+```
+
+Pass `-IsccPath 'C:\path\to\ISCC.exe'` for a compiler outside the standard installation directories. To wrap an already checked candidate without rebuilding or repeating application tests:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build-installer.ps1 -AppDirectory '.\dist\candidate-<id>\UnifiedScheduler' -IsccPath 'C:\path\to\ISCC.exe'
+```
+
+The installer is `UnifiedScheduler-Setup-windows-x64.exe`, with a matching `.sha256`. It installs under `%LOCALAPPDATA%\Programs\UnifiedScheduler` without administrator access, creates a Start menu shortcut, offers an optional desktop shortcut and registers an uninstaller. New versions use the same installation identity and replace managed runtime files. Quit the app from its tray before updating. Uninstalling preserves the separate workspace and Windows credentials; use the privacy policy's removal instructions to erase personal data. A local/Moodle-only package requires `-AllowLocalOnly` and gets a distinct `-local-moodle` installer filename.
+
+After reviewing the installer, publish a GitHub Release with the Setup executable and checksum attached. Keep the Setup asset's name constant across releases; the version is embedded in its file metadata and release tag. The website's direct-download target is:
+
+```text
+https://github.com/morelljedcuizon-commits/unified-scheduler/releases/latest/download/UnifiedScheduler-Setup-windows-x64.exe
+```
+
+That URL works only after an ordinary public release containing that exact asset exists. Drafts and prereleases do not provide the intended latest-release download. Publish the approved release first, then deploy the website button; the Pages workflow checks direct-download links before deployment. See GitHub's [release-link documentation](https://docs.github.com/en/repositories/releasing-projects-on-github/linking-to-releases).
 
 ## Build with GitHub Actions
 
@@ -30,7 +54,7 @@ The tracked `.github/workflows/windows-candidate.yml` has only `workflow_dispatc
 2. In **Settings → Environments**, create `release-build`. Restrict allowed branches to your reviewed release/default branch and configure a required reviewer if available for your GitHub plan.
 3. Add the environment secret `GOOGLE_DESKTOP_CLIENT_JSON` containing the valid downloaded **Desktop** client JSON. Never put an authorized-user `token.json`, personal calendar, Moodle URL or Web/service-account credential here. Treat workflow artifacts as distributable, because the Desktop client will intentionally be included in the app.
 4. In **Actions → Build Windows release candidate → Run workflow**, select the reviewed branch. Keep **Include Google** enabled for a Google-enabled candidate; disable it for a clearly labeled local/Moodle-only candidate without a secret.
-5. Approve the environment run if configured. The workflow uses a Windows runner and Python 3.12 x64, runs tests/build/smoke/content checks, then uploads only ZIP/checksum artifacts for 14 days. The raw runner-temporary client file is removed in an `always()` step. A failed check prevents artifact upload.
+5. Approve the environment run if configured. Keep **Build installer** enabled to include the Setup executable. The workflow uses a Windows runner and Python 3.12 x64, runs tests/build/smoke/content checks, then uploads ZIP, installer and checksum artifacts for 14 days. The raw runner-temporary client file is removed in an `always()` step. A failed check prevents artifact upload.
 6. Download and inspect the artifact. The workflow itself has not been run against this GitHub account during local preparation; its first real run remains an owner check. Dependencies use the repository's version ranges; record resolved versions and consider a reviewed lockfile before repeatable signed releases.
 
 GitHub references: [manual workflows](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow), [environment protection](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments), [artifact upload](https://github.com/actions/upload-artifact). Review dependencies' licenses, notices and distribution obligations as part of the release; the project's MIT license does not change third-party licenses (including Qt/PySide).

@@ -8,6 +8,11 @@ on:
         type: boolean
         default: true
         required: true
+      build_installer:
+        description: 'Build a Windows setup EXE as well as the portable ZIP'
+        type: boolean
+        default: true
+        required: true
 
 # This workflow uploads review artifacts only. It cannot create a GitHub Release.
 permissions:
@@ -29,6 +34,18 @@ jobs:
         with:
           python-version: '3.12'
           architecture: x64
+      - name: Locate Inno Setup
+        if: inputs.build_installer
+        run: |
+          $compilerCandidates = @(
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+            "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+          )
+          $compilerCommand = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+          if ($compilerCommand) { $compilerCandidates = @($compilerCommand.Source) + $compilerCandidates }
+          $compilerPath = $compilerCandidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+          if (-not $compilerPath) { throw 'This runner does not have Inno Setup. Use a runner with Inno Setup 6.3+ installed, or disable build_installer for a ZIP-only candidate.' }
+          "UNIFIED_SCHEDULER_ISCC_PATH=$compilerPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Prepare app-owned OAuth configuration
         if: inputs.include_google
         env:
@@ -40,12 +57,17 @@ jobs:
       - name: Test, build, inspect and archive
         env:
           INCLUDE_GOOGLE: ${{ inputs.include_google }}
+          BUILD_INSTALLER: ${{ inputs.build_installer }}
         run: |
           $releaseArguments = @{}
           if ($env:INCLUDE_GOOGLE -eq 'true') {
             $releaseArguments.GoogleClientConfig = Join-Path $env:RUNNER_TEMP 'unified-scheduler-desktop-client.json'
           } else {
             $releaseArguments.AllowLocalOnly = $true
+          }
+          if ($env:BUILD_INSTALLER -eq 'true') {
+            $releaseArguments.BuildInstaller = $true
+            $releaseArguments.IsccPath = $env:UNIFIED_SCHEDULER_ISCC_PATH
           }
           .\scripts\release.ps1 @releaseArguments
       - name: Remove temporary configuration
@@ -58,6 +80,7 @@ jobs:
           name: UnifiedScheduler-windows-candidate
           path: |
             dist/candidate-*/*.zip
+            dist/candidate-*/*.exe
             dist/candidate-*/*.sha256
           if-no-files-found: error
           retention-days: 14

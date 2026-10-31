@@ -1,8 +1,11 @@
 Unified Scheduler - Windows desktop application
 
-Extract the entire ZIP before opening UnifiedScheduler.exe. Keep the _internal
-folder beside the executable. Python and development tools are not needed.
-This is a portable folder build, not an installer. It is not code-signed.
+If you downloaded the Setup executable, open it to install for your Windows
+account, then launch Unified Scheduler from the Start menu. Administrator
+access is not required. You can uninstall it from Windows Settings > Apps.
+If you downloaded the portable ZIP, extract the entire ZIP before opening
+UnifiedScheduler.exe. Keep the _internal folder beside the executable.
+Python and development tools are not needed. This build is not code-signed.
 
 Start with local tasks, or choose Connect Google account. Google sign-in opens
 your default browser; return to the app after consent. A Google-enabled build
@@ -27,8 +30,8 @@ cached events. Disconnect does not revoke Google's remote consent; manage that
 at https://myaccount.google.com/connections . Delete local tasks in the app.
 For full removal, disconnect all sources first, disable Start with Windows,
 Quit through the tray, then remove the data directory and any backups you own.
-Deleting the application folder alone does not delete per-user data or vault
-credentials. Closing the window may keep the app running in the tray.
+Uninstalling or deleting the application folder does not delete per-user data
+or vault credentials. Closing the window may keep the app running in the tray.
 
 Reminders and automatic synchronization require the app to keep running.
 Windows notifications, internet access and provider permissions affect behavior.
@@ -38,8 +41,8 @@ export window. Verify important deadlines with the original calendar provider.
 Support/privacy contact: cuizon.morell@gmail.com
 Source and release notes:
 https://github.com/morelljedcuizon-commits/unified-scheduler
-Privacy and terms source (the release page should also link the published site):
-https://github.com/morelljedcuizon-commits/unified-scheduler/tree/main/docs/public-site
+Privacy: https://morelljedcuizon-commits.github.io/unified-scheduler/privacy.html
+Terms: https://morelljedcuizon-commits.github.io/unified-scheduler/terms.html
 Do not include tokens, private Moodle URLs or personal calendars in public issues.
 
 The application's MIT license is included as LICENSE. Dependencies have their

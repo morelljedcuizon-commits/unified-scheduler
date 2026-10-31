@@ -69,6 +69,17 @@ Open **Google Auth platform → Branding**. If the platform is unconfigured, use
 
 Completed for the initial website on October 31, 2026. The [website guide](PUBLIC_SITE.md#published-website) records the live homepage, privacy and terms URLs. Follow the review and deployment instructions below for future changes.
 
+For the currently published GitHub Pages site, the Branding fields are:
+
+| Field | Value |
+| --- | --- |
+| Application home page | `https://morelljedcuizon-commits.github.io/unified-scheduler/` |
+| Application privacy policy link | `https://morelljedcuizon-commits.github.io/unified-scheduler/privacy.html` |
+| Application terms of service link | `https://morelljedcuizon-commits.github.io/unified-scheduler/terms.html` |
+| Authorized domain | `morelljedcuizon-commits.github.io` |
+
+The authorized-domain field takes a hostname, without `https://`, a trailing slash or the repository path. This hostname follows Google's top-private-domain rule because `github.io` is in the [Public Suffix List](https://publicsuffix.org/list/public_suffix_list.dat). Entering it does not verify ownership. See the DNS requirement below before submitting for verification.
+
 Review `docs/public-site/index.html`, `privacy.html` and `terms.html`. Replace any owner/contact/domain placeholders with verified information. The contact information must be usable; a public issue tracker is not a place for users to post private calendars or credentials. Publish the static site using [the repository's website guide](PUBLIC_SITE.md).
 
 Use the **actual public HTTPS URLs** in the following steps. Do not enter local file paths, unpublished preview URLs, a GitHub source-file URL, or example domains. The homepage must describe the desktop application and link to its privacy and terms pages. Confirm those pages load without signing in. Review the privacy text against the packaged executable and any distribution/website services you add.
@@ -80,6 +91,8 @@ A GitHub repository or a working `github.io` page does not by itself prove that 
 The straightforward route is a domain you control: attach it to GitHub Pages, configure its DNS and HTTPS, then add a **Domain property** in [Search Console](https://search.google.com/search-console). Publish the DNS verification record that Google supplies and keep it in place. A verified property must correspond to the actual domain you submit; GitHub's own domain verification and Google Search Console verification are separate processes. [Search Console ownership verification](https://support.google.com/webmasters/answer/9008080?hl=en)
 
 If using a hosting-provider subdomain, establish that Google accepts and can verify the relevant domain for your project before relying on it. Do not claim ownership of `github.io` or assume site publication is approval.
+
+Google's current [OAuth domain-verification instructions](https://support.google.com/cloud/answer/13804266?hl=en) require a DNS-verified **Domain property**, rather than a URL-prefix property or HTML verification file. Use a Google account that owns the Cloud project. GitHub controls DNS for the default `github.io` hostname, so a custom domain whose DNS you control is the practical route. After connecting it to the existing Pages site, update all three branding URLs and the authorized domain to match; the site does not need a different host.
 
 ### 6. Complete Branding URLs and authorized domains
 

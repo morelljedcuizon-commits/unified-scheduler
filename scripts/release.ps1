@@ -1,7 +1,9 @@
 param(
     [string]$GoogleClientConfig,
     [switch]$AllowLocalOnly,
-    [switch]$SkipInstall
+    [switch]$SkipInstall,
+    [switch]$BuildInstaller,
+    [string]$IsccPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -9,6 +11,7 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 if ($GoogleClientConfig) {
     $GoogleClientConfig = (Resolve-Path -LiteralPath $GoogleClientConfig).Path
 }
+if ($IsccPath) { $IsccPath = (Resolve-Path -LiteralPath $IsccPath).Path }
 Set-Location -LiteralPath $projectRoot
 $selectedClient = $GoogleClientConfig
 if (-not $selectedClient) { $selectedClient = $env:UNIFIED_SCHEDULER_GOOGLE_CLIENT_CONFIG }
@@ -16,6 +19,24 @@ if (-not $selectedClient) { $selectedClient = Join-Path $projectRoot 'local-conf
 $hasGoogleClient = Test-Path -LiteralPath $selectedClient -PathType Leaf
 if (-not $hasGoogleClient -and -not $AllowLocalOnly) {
     throw 'Supply a Desktop OAuth client for a Google-enabled candidate, or explicitly use -AllowLocalOnly.'
+}
+if ($BuildInstaller) {
+    if (-not $IsccPath) {
+        $compilerCommand = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+        if ($compilerCommand) { $IsccPath = $compilerCommand.Source }
+        else {
+            $compilerCandidates = @(
+                "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+                "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
+                "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe"
+            )
+            $IsccPath = $compilerCandidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+        }
+    }
+    if (-not $IsccPath -or -not (Test-Path -LiteralPath $IsccPath -PathType Leaf)) {
+        throw 'Building an installer requires Inno Setup 6.3 or newer. Install it from https://jrsoftware.org/isdl.php or pass -IsccPath to ISCC.exe.'
+    }
+    $IsccPath = (Resolve-Path -LiteralPath $IsccPath).Path
 }
 
 # Each candidate gets a fresh output directory; never replace a running app or
@@ -74,4 +95,7 @@ Compress-Archive -LiteralPath $appDirectory -DestinationPath $archive
 $digest = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
 Set-Content -LiteralPath ($archive + '.sha256') -Value ($digest + '  ' + [IO.Path]::GetFileName($archive)) -Encoding ASCII
 Write-Host "Prepared candidate: $archive"
+if ($BuildInstaller) {
+    & (Join-Path $PSScriptRoot 'build-installer.ps1') -AppDirectory $appDirectory -IsccPath $IsccPath -AllowLocalOnly:$AllowLocalOnly
+}
 Write-Host 'Review and test this candidate before manually publishing a GitHub Release. No release was published.'

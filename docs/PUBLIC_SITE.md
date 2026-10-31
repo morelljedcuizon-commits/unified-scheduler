@@ -45,6 +45,8 @@ Before publishing:
 
 The prepared `.github/workflows/pages.yml` workflow runs **only by manual dispatch**. Merely committing or pushing it does not deploy the website. It requires the owner's publication confirmation and rejects HTML that still contains a draft marker or an uppercase template placeholder.
 
+The installer download button is prepared for the first Windows release. Before deploying that change, publish the approved release with the exact Setup filename described in [RELEASE.md](RELEASE.md#windows-installer-and-direct-website-download). The workflow also checks that links marked `data-release-download` are publicly downloadable, so a draft release cannot leave a broken button on the live website.
+
 1. Review and commit the website files, workflow and relevant documentation. Push them to the repository's default branch. No GitHub Release is created by the website workflow.
 2. In the repository, open **Settings → Pages** and choose **GitHub Actions** as the build/deployment source. If repository or organization policies restrict Actions, allow the official checkout/Pages actions used by the workflow.
 3. In **Settings → Environments**, review the `github-pages` environment's allowed branches and, if available for the repository plan, required reviewers. The workflow has only read access to contents, with Pages/OIDC deployment permissions scoped to the deploy job.
@@ -60,6 +62,8 @@ See GitHub's official [custom Pages workflows](https://docs.github.com/en/pages/
 ## Custom domain and Google's separate ownership requirements
 
 GitHub hosting and Google OAuth domain verification are separate. Publishing on `github.io` does not itself prove that the developer owns an appropriate top private domain for Google's branding requirements. Do not enter `github.io` as a developer-owned authorized domain.
+
+For the current site, the authorized-domain hostname is `morelljedcuizon-commits.github.io`, without a scheme or path. The [Google publication guide](GOOGLE_OAUTH_PUBLICATION.md#4-finish-and-deploy-the-public-website) lists the exact branding fields. Google's [OAuth domain-verification instructions](https://support.google.com/cloud/answer/13804266?hl=en) require DNS verification of a Search Console Domain property; a URL-prefix property or HTML verification file does not satisfy that prescribed method. A custom domain you control provides the needed DNS access while retaining GitHub Pages hosting.
 
 For the predictable ownership route:
 
