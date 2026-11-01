@@ -11,7 +11,7 @@ import secrets
 import time as clock
 from zoneinfo import ZoneInfo
 
-from google.auth.exceptions import RefreshError, TransportError
+from google.auth.exceptions import InvalidValue, RefreshError, TransportError
 from google.auth.transport.requests import Request
 from google.oauth2 import id_token
 from google.oauth2.credentials import Credentials
@@ -19,6 +19,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from oauthlib.oauth2 import AccessDeniedError
+from oauthlib.oauth2.rfc6749.tokens import OAuth2Token
 import google_auth_httplib2
 import httplib2
 import requests
@@ -32,6 +33,7 @@ CALENDAR_SCOPES = ("https://www.googleapis.com/auth/calendar.calendarlist.readon
 SCOPES = ("openid", "https://www.googleapis.com/auth/userinfo.email", *CALENDAR_SCOPES)
 MAX_PAGES = 200
 MAX_EVENTS = 100_000
+ID_TOKEN_CLOCK_SKEW_SECONDS = 60
 
 # This library's localhost request logger includes the OAuth callback query.
 # It must remain silent even if an embedding application enables INFO logging.
@@ -41,7 +43,20 @@ logging.getLogger("google_auth_oauthlib.flow").disabled = True
 class DesktopFlow(InstalledAppFlow):
     def fetch_token(self, **kwargs):
         kwargs.setdefault("timeout", 30)
-        return super().fetch_token(**kwargs)
+        try:
+            return super().fetch_token(**kwargs)
+        except Warning as warning:
+            token = getattr(warning, "token", None)
+            if (type(warning) is not Warning or not isinstance(token, OAuth2Token)
+                    or not token.scope_changed
+                    or not all(hasattr(warning, name) for name in ("old_scope", "new_scope"))):
+                raise
+            # OAuthlib has validated the token but stops when Google's returned
+            # grants differ, including permissions from an earlier consent.
+            # Keep the actual grants for _authorize's Calendar/identity checks.
+            # OAuth state and PKCE validation remain in the normal exchange.
+            self.oauth2session.token = token
+            return token
 
 
 def _serialized_credentials(credentials) -> str:
@@ -130,7 +145,18 @@ class GoogleProvider:
             )
             if not credentials.id_token:
                 raise ProviderError("Google did not return an account identity. Retry and allow the identity and calendar permissions.")
-            claims = id_token.verify_oauth2_token(credentials.id_token, BoundedRequest(), audience=config["installed"]["client_id"])
+            try:
+                claims = id_token.verify_oauth2_token(
+                    credentials.id_token, BoundedRequest(), audience=config["installed"]["client_id"],
+                    clock_skew_in_seconds=ID_TOKEN_CLOCK_SKEW_SECONDS,
+                )
+            except InvalidValue as error:
+                if str(error).startswith(("Token used too early,", "Token expired,")):
+                    raise ProviderError(
+                        "Google sign-in could not verify your computer's time. Open Windows Settings > "
+                        "Time & language > Date & time, select Sync now, then connect again."
+                    ) from None
+                raise ProviderError("Google's account identity could not be verified. Please try again.") from None
             if (not claims.get("sub") or not claims.get("email") or claims.get("email_verified") is not True
                     or claims.get("nonce") != nonce):
                 raise ProviderError("Google's account identity could not be verified. Please try again.")

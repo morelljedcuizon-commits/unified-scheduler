@@ -4,6 +4,8 @@ from pathlib import Path
 import sys
 import tempfile
 
+from unified_scheduler import __version__
+
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Unified Scheduler native desktop application")
@@ -23,7 +25,7 @@ def main(argv=None):
     app = QApplication(sys.argv[:1])
     app.setOrganizationName("UnifiedScheduler")
     app.setApplicationName("Unified Scheduler")
-    app.setApplicationVersion("1.0.0")
+    app.setApplicationVersion(__version__)
     app.setStyle("Fusion")
     app.setQuitOnLastWindowClosed(False)
     temporary = tempfile.TemporaryDirectory(prefix="UnifiedScheduler-demo-") if args.demo else None
