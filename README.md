@@ -96,9 +96,8 @@ For an External app in Testing, Google generally issues refresh tokens that expi
 ## Moodle / MSU-IIT MOLE setup
 
 1. Sign into your Moodle site in a browser and open its calendar.
-2. Select **Export calendar**. Choose **All events** if you want the academic events your account can access, then choose an appropriate time range.
-3. Choose **My personal events** and the **Recent and next 60 days** time period, then select **Get calendar URL / Get URL address** and copy the generated HTTPS URL.
-4. In Unified Scheduler, choose **Add Moodle Calendar**, enter a display name and the URL, then use **Test Connection** and **Save**.
+2. Select **Export calendar**. Choose **All events** and the **Recent and next 60 days** time period, then select **Get calendar URL / Get URL address** and copy the generated HTTPS URL.
+3. In Unified Scheduler, choose **Add Moodle Calendar**, enter a display name and the URL, then use **Test Connection** and **Save**.
 
 A URL with `preset_what=user` includes only personal events. `preset_time=recentupcoming` is a moving recent/upcoming window, not unlimited history. Course permissions, export choices and the Moodle installation determine what is returned. Consult [Moodle's calendar export documentation](https://docs.moodle.org/en/Using_Calendar).
 

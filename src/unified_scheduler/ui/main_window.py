@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 from zoneinfo import ZoneInfo, available_timezones
 
-from PySide6.QtCore import QDate, QThreadPool, QTimer, Qt, QUrl
+from PySide6.QtCore import QDate, QThreadPool, QTimer, Qt, QUrl, Slot
 from PySide6.QtGui import QAction, QColor, QDesktopServices, QIcon, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication, QCalendarWidget, QCheckBox, QColorDialog, QComboBox, QDateEdit,
@@ -66,6 +66,7 @@ class MainWindow(QMainWindow):
         self.current_page = "Today"
         self.selected_event = None
         self.workers = set()
+        self.worker_callbacks = {}
         self.busy = False
         self.quitting = False
         self.smoke_test = smoke_test
@@ -840,19 +841,29 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(message)
         worker = Worker(function)
         self.workers.add(worker)
-        worker.signals.succeeded.connect(on_success)
-        worker.signals.failed.connect(self.job_failed)
-        worker.signals.finished.connect(lambda: self.job_finished(worker))
+        self.worker_callbacks[worker] = on_success
+        worker.signals.succeeded.connect(self.job_succeeded, Qt.ConnectionType.QueuedConnection)
+        worker.signals.failed.connect(self.job_failed, Qt.ConnectionType.QueuedConnection)
+        worker.signals.finished.connect(self.job_finished, Qt.ConnectionType.QueuedConnection)
         QThreadPool.globalInstance().start(worker)
         if self.current_page == "Accounts":
             self.refresh_content()
 
-    def job_failed(self, message):
+    @Slot(object, object)
+    def job_succeeded(self, worker, result):
+        callback = self.worker_callbacks.get(worker)
+        if callback:
+            callback(result)
+
+    @Slot(object, str)
+    def job_failed(self, worker, message):
         self.statusBar().showMessage(message)
         QMessageBox.warning(self, "Calendar connection", message)
 
+    @Slot(object)
     def job_finished(self, worker):
         self.workers.discard(worker)
+        self.worker_callbacks.pop(worker, None)
         self.busy = False
         self.sync_button.setText("↻  Sync")
         self.sync_button.setEnabled(True)

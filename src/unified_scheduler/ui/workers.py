@@ -3,9 +3,9 @@ from PySide6.QtCore import QObject, QRunnable, Signal, Slot
 
 
 class WorkerSignals(QObject):
-    succeeded = Signal(object)
-    failed = Signal(str)
-    finished = Signal()
+    succeeded = Signal(object, object)
+    failed = Signal(object, str)
+    finished = Signal(object)
 
 
 class Worker(QRunnable):
@@ -25,8 +25,8 @@ class Worker(QRunnable):
                 message = str(exc)
             else:
                 message = "The operation could not finish. Check your connection and credential store, then try again."
-            self.signals.failed.emit(message)
+            self.signals.failed.emit(self, message)
         else:
-            self.signals.succeeded.emit(result)
+            self.signals.succeeded.emit(self, result)
         finally:
-            self.signals.finished.emit()
+            self.signals.finished.emit(self)

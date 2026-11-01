@@ -3,7 +3,7 @@ from datetime import date, datetime, time, timedelta
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
-from PySide6.QtCore import QDate, QTime, Qt, QThreadPool
+from PySide6.QtCore import QDate, QTime, Qt, QThreadPool, Slot
 from PySide6.QtWidgets import (
     QCheckBox, QColorDialog, QComboBox, QDateEdit, QDialog, QDialogButtonBox,
     QFormLayout, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton,
@@ -197,13 +197,14 @@ class MoodleDialog(QDialog):
         self.provider, self.timezone, self.account = provider, timezone, account
         self.color_value = color
         self.worker = None
+        self.worker_callback = None
         self.setWindowTitle("Edit Moodle calendar" if account else "Add Moodle calendar")
         self.setMinimumWidth(500)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 24, 24, 24)
         layout.setSpacing(14)
         layout.addWidget(text_label("Your academic deadlines, together", "section"))
-        layout.addWidget(text_label("In Moodle, open Calendar → Export calendar. Choose My personal events and the Recent and next 60 days time period, then copy the calendar URL. No Moodle password is needed.", "muted"))
+        layout.addWidget(text_label("In Moodle, open Calendar → Export calendar. Choose All events and the Recent and next 60 days time period, then copy the calendar URL. No Moodle password is needed.", "muted"))
         form = QFormLayout()
         self.name_edit = QLineEdit(account.label if account else "")
         self.name_edit.setPlaceholderText("e.g. MSU-IIT MOLE")
@@ -253,15 +254,31 @@ class MoodleDialog(QDialog):
         self.buttons.setEnabled(False)
         self.message.setText("Connecting securely…")
         self.worker = Worker(function)
-        self.worker.signals.succeeded.connect(callback)
-        self.worker.signals.failed.connect(self.message.setText)
-        self.worker.signals.finished.connect(self._finished)
+        self.worker_callback = callback
+        self.worker.signals.succeeded.connect(self._worker_succeeded, Qt.ConnectionType.QueuedConnection)
+        self.worker.signals.failed.connect(self._worker_failed, Qt.ConnectionType.QueuedConnection)
+        self.worker.signals.finished.connect(self._finished, Qt.ConnectionType.QueuedConnection)
         QThreadPool.globalInstance().start(self.worker)
 
-    def _finished(self):
+    @Slot(object, object)
+    def _worker_succeeded(self, worker, result):
+        if worker is self.worker and self.worker_callback:
+            callback, self.worker_callback = self.worker_callback, None
+            callback(result)
+
+    @Slot(object, str)
+    def _worker_failed(self, worker, message):
+        if worker is self.worker:
+            self.message.setText(message)
+
+    @Slot(object)
+    def _finished(self, worker):
+        if worker is not self.worker:
+            return
         self.test.setEnabled(True)
         self.buttons.setEnabled(True)
         self.worker = None
+        self.worker_callback = None
 
     def save(self):
         name, url = self.name_edit.text().strip(), self.url_edit.text().strip()
