@@ -10,7 +10,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PySide6.QtCore import QCoreApplication, QEvent, QTimer
 from PySide6.QtGui import QFontDatabase
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QDialog
+from PySide6.QtWidgets import QApplication, QDialog, QPushButton
 
 from unified_scheduler.database import Repository
 from unified_scheduler.providers.moodle import MoodleProvider
@@ -112,6 +112,28 @@ def test_add_feed_test_save_and_background_sync_populates_dashboard(tmp_path, mo
         rows = window.pages["Today"].findChildren(EventRow)
         assert [row.entry.title for row in rows] == ["Updated deadline"]
         assert not errors
+    finally:
+        window.quitting = True
+        window.close()
+        window.deleteLater()
+        app.processEvents()
+        QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+        repo.close()
+
+
+def test_fresh_local_workspace_does_not_enter_syncing_state(tmp_path):
+    app = QApplication.instance() or QApplication([])
+    app.setQuitOnLastWindowClosed(False)
+    repo = Repository(tmp_path / "fresh.sqlite3")
+    window = MainWindow(repo, MemoryCredentials(), smoke_test=True)
+    try:
+        window.sync()
+        assert not window.busy
+        assert window.sync_button.isEnabled()
+        actions = window.pages["Accounts"].findChildren(QPushButton)
+        assert all(button.isEnabled() for button in actions
+                   if button.text() in ("＋  Connect Google account", "＋  Add Moodle calendar"))
+        assert "Connect a source" in window.statusBar().currentMessage()
     finally:
         window.quitting = True
         window.close()

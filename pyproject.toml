@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "unified-scheduler"
-version = "1.0.1"
+version = "1.0.2"
 description = "A native Windows calendar and task manager with Google Calendar and Moodle subscriptions."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -37,4 +37,3 @@ where = ["src"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-ra"
-

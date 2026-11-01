@@ -274,8 +274,11 @@ class MainWindow(QMainWindow):
                 self.connect_google()
             elif dialog.choice == "moodle":
                 self.add_moodle()
-        if not self.busy:
+        if not self.busy and self.has_sync_sources():
             self.sync()
+
+    def has_sync_sources(self):
+        return any(account.kind in ("google", "moodle") for account in self.repo.list_accounts())
 
     def navigate(self, page):
         self.current_page = page
@@ -861,7 +864,7 @@ class MainWindow(QMainWindow):
             return
         if self.busy:
             return
-        if not [a for a in self.repo.list_accounts() if a.kind != "local"]:
+        if not self.has_sync_sources():
             self.statusBar().showMessage("Local entries are saved. Connect a source in Accounts to sync calendars.", 5000)
             return
         from unified_scheduler.sync import SyncService
